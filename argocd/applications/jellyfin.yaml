@@ -6,7 +6,7 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: https://github.com/yoshiki/homelab-k3s.git  # 実際のリポジトリURLに変更してください
+    repoURL: https://github.com/yox2yox/homelab-k3s.git
     targetRevision: main
     path: apps/jellyfin
   destination:
