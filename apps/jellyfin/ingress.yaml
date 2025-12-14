@@ -23,7 +23,7 @@ spec:
   - host: ghoost.local
     http:
       paths:
-      - path: /jellyfin
+      - path: /
         pathType: Prefix
         backend:
           service:
