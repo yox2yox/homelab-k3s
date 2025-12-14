@@ -12,7 +12,7 @@ metadata:
 spec:
   accessModes:
     - ReadWriteOnce
-  storageClassName: local-storage
+  storageClassName: local-path
   resources:
     requests:
       storage: 10Gi
@@ -25,7 +25,7 @@ metadata:
 spec:
   accessModes:
     - ReadWriteOnce
-  storageClassName: local-storage
+  storageClassName: local-path
   resources:
     requests:
       storage: 500Gi
@@ -89,10 +89,11 @@ spec:
       volumes:
       - name: config
         persistentVolumeClaim:
-          claimName: jellyfin-config
+          claimName: jellyfin-config  # 設定ファイルはPVCでOK
       - name: media
-        persistentVolumeClaim:
-          claimName: jellyfin-media
+        hostPath:
+          path: /mnt/raid1/jellyfin-media  # Sambaで共有しているパス
+          type: DirectoryOrCreate
 ---
 apiVersion: v1
 kind: Service
@@ -107,6 +108,7 @@ spec:
   - name: http
     port: 8096
     targetPort: http
+    nodePort: 30096  # 追加：固定ポート指定
     protocol: TCP
   - name: https
     port: 8920
