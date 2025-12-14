@@ -92,7 +92,7 @@ spec:
           claimName: jellyfin-config  # 設定ファイルはPVCでOK
       - name: media
         hostPath:
-          path: /mnt/raid1/jellyfin-media  # Sambaで共有しているパス
+          path: /mnt/raid1/media  # Sambaで共有しているパス
           type: DirectoryOrCreate
 ---
 apiVersion: v1
