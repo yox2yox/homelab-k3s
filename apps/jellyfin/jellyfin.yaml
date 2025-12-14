@@ -80,7 +80,7 @@ spec:
       - name: media
         hostPath:
           path: /mnt/raid/media  # Sambaで共有しているパス
-          type: DirectoryOrCreate
+          type: Directory  # ディレクトリが存在することを確認（DirectoryOrCreateは間違ったディレクトリを作成してしまう可能性がある）
 ---
 apiVersion: v1
 kind: Service
