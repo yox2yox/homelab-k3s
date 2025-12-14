@@ -36,6 +36,10 @@ spec:
       labels:
         app: jellyfin
     spec:
+      securityContext:
+        runAsUser: 1000  # 非rootユーザーで実行
+        runAsGroup: 1000
+        fsGroup: 1000  # ボリュームの所有権を設定
       containers:
       - name: jellyfin
         image: jellyfin/jellyfin:latest
@@ -49,11 +53,23 @@ spec:
         env:
         - name: TZ
           value: "Asia/Tokyo"  # タイムゾーンを設定
+        securityContext:
+          allowPrivilegeEscalation: false  # 権限昇格を禁止
+          readOnlyRootFilesystem: true  # ルートファイルシステムを読み取り専用に
+          runAsNonRoot: true  # 非rootユーザーとして実行を強制
+          capabilities:
+            drop:
+            - ALL  # すべてのLinux capabilitiesを削除
         volumeMounts:
         - name: config
           mountPath: /config
         - name: media
           mountPath: /media
+          readOnly: true  # メディアディレクトリは読み取り専用
+        - name: cache
+          mountPath: /cache  # Jellyfinがキャッシュを書き込むための場所
+        - name: tmp
+          mountPath: /tmp  # 一時ファイル用
         resources:
           requests:
             cpu: 500m
@@ -81,6 +97,10 @@ spec:
         hostPath:
           path: /mnt/raid/media  # Sambaで共有しているパス
           type: Directory  # ディレクトリが存在することを確認（DirectoryOrCreateは間違ったディレクトリを作成してしまう可能性がある）
+      - name: cache
+        emptyDir: {}  # Podごとに一時的なキャッシュディレクトリ
+      - name: tmp
+        emptyDir: {}  # 一時ファイル用ディレクトリ
 ---
 apiVersion: v1
 kind: Service
