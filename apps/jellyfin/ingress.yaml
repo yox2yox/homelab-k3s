@@ -3,7 +3,7 @@ apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: jellyfin
-  namespace: jellyfin
+  namespace: media
   annotations:
     # Traefikを使用する場合
     # traefik.ingress.kubernetes.io/router.entrypoints: web,websecure
@@ -19,7 +19,7 @@ metadata:
 spec:
   ingressClassName: traefik  # k3sのデフォルトはtraefik、環境に応じて変更してください
   rules:
-  - host: jellyfin.example.com  # 実際のドメインに変更してください
+  - host: jellyfin.ghoost.local  # 実際のドメインに変更してください
     http:
       paths:
       - path: /
