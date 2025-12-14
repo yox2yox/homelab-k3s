@@ -37,9 +37,9 @@ spec:
         app: jellyfin
     spec:
       securityContext:
-        runAsUser: 1000  # 非rootユーザーで実行
-        runAsGroup: 1000
-        fsGroup: 1000  # ボリュームの所有権を設定
+        runAsUser: 10000  # jellyfin system user
+        runAsGroup: 10000  # jellyfin system group
+        fsGroup: 10000  # jellyfin group for volume access
       containers:
       - name: jellyfin
         image: jellyfin/jellyfin:latest
@@ -95,7 +95,7 @@ spec:
           claimName: jellyfin-config  # 設定ファイルはPVCでOK
       - name: media
         hostPath:
-          path: /mnt/raid/media  # Sambaで共有しているパス
+          path: /mnt/raid/shared/jellyfin  # Jellyfin専用メディアディレクトリ
           type: Directory  # ディレクトリが存在することを確認（DirectoryOrCreateは間違ったディレクトリを作成してしまう可能性がある）
       - name: cache
         emptyDir: {}  # Podごとに一時的なキャッシュディレクトリ
