@@ -11,5 +11,5 @@ spec:
   persistentVolumeReclaimPolicy: Retain
   storageClassName: local-path
   hostPath:
-    path: /mnt/raid1/jellyfin-config  # 設定ファイルの保存先
+    path: /mnt/raid/jellyfin-config  # 設定ファイルの保存先
     type: DirectoryOrCreate
