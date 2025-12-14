@@ -64,6 +64,8 @@ spec:
           value: "Asia/Tokyo"  # タイムゾーンを設定
         - name: JELLYFIN_PublishedServerUrl
           value: "http://ghoost.local/jellyfin"
+        - name: JELLYFIN_BaseUrl
+          value: "/jellyfin"
         volumeMounts:
         - name: config
           mountPath: /config

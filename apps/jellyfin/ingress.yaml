@@ -6,7 +6,7 @@ metadata:
   namespace: media
   annotations:
     # Traefikを使用する場合
-    traefik.ingress.kubernetes.io/router.middlewares: media-jellyfin-stripprefix@kubernetescrd
+    # traefik.ingress.kubernetes.io/router.middlewares: media-jellyfin-stripprefix@kubernetescrd
     # traefik.ingress.kubernetes.io/router.entrypoints: web,websecure
     # traefik.ingress.kubernetes.io/router.tls: "true"
 
