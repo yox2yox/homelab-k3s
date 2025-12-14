@@ -6,6 +6,7 @@ metadata:
   namespace: media
   annotations:
     # Traefikを使用する場合
+    traefik.ingress.kubernetes.io/router.middlewares: media-jellyfin-stripprefix@kubernetescrd
     # traefik.ingress.kubernetes.io/router.entrypoints: web,websecure
     # traefik.ingress.kubernetes.io/router.tls: "true"
 
@@ -14,15 +15,15 @@ metadata:
     # nginx.ingress.kubernetes.io/proxy-read-timeout: "600"
     # nginx.ingress.kubernetes.io/proxy-send-timeout: "600"
 
-    # cert-managerを使用する場合（Let's Encrypt）
+    # cert-managerを使用する場合(Let's Encrypt)
     # cert-manager.io/cluster-issuer: "letsencrypt-prod"
 spec:
   ingressClassName: traefik  # k3sのデフォルトはtraefik、環境に応じて変更してください
   rules:
-  - host: jellyfin.ghoost.local  # 実際のドメインに変更してください
+  - host: ghoost.local
     http:
       paths:
-      - path: /
+      - path: /jellyfin
         pathType: Prefix
         backend:
           service:
