@@ -102,7 +102,7 @@ metadata:
   labels:
     app: jellyfin
 spec:
-  type: LoadBalance  # Ingressを使用する場合はClusterIP、直接アクセスする場合はLoadBalancerまたはNodePort
+  type: NodePort  # Ingressを使用する場合はClusterIP、直接アクセスする場合はLoadBalancerまたはNodePort
   ports:
   - name: http
     port: 8096
