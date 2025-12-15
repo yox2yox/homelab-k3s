@@ -1,0 +1,314 @@
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: immich
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: immich-config
+  namespace: immich
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: local-path
+  resources:
+    requests:
+      storage: 5Gi
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: immich-postgres
+  namespace: immich
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: local-path
+  resources:
+    requests:
+      storage: 10Gi
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: immich-ml-cache
+  namespace: immich
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: local-path
+  resources:
+    requests:
+      storage: 10Gi
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: immich-config
+  namespace: immich
+data:
+  DB_HOSTNAME: postgres
+  DB_PORT: "5432"
+  DB_USERNAME: immich
+  DB_DATABASE_NAME: immich
+  REDIS_HOSTNAME: redis
+  REDIS_PORT: "6379"
+  IMMICH_MACHINE_LEARNING_URL: http://immich-ml:3003
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: immich-secrets
+  namespace: immich
+type: Opaque
+stringData:
+  DB_PASSWORD: immich_password_change_me
+  POSTGRES_PASSWORD: immich_password_change_me
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: postgres
+  namespace: immich
+  labels:
+    app: postgres
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: postgres
+  template:
+    metadata:
+      labels:
+        app: postgres
+    spec:
+      containers:
+      - name: postgres
+        image: tensorchord/pgvecto-rs:pg14-v0.2.0
+        env:
+        - name: POSTGRES_USER
+          value: immich
+        - name: POSTGRES_DB
+          value: immich
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: immich-secrets
+              key: POSTGRES_PASSWORD
+        ports:
+        - containerPort: 5432
+        volumeMounts:
+        - name: data
+          mountPath: /var/lib/postgresql/data
+        resources:
+          requests:
+            cpu: 100m
+            memory: 256Mi
+          limits:
+            cpu: 1000m
+            memory: 1Gi
+      volumes:
+      - name: data
+        persistentVolumeClaim:
+          claimName: immich-postgres
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres
+  namespace: immich
+spec:
+  ports:
+  - port: 5432
+  selector:
+    app: postgres
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: redis
+  namespace: immich
+  labels:
+    app: redis
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: redis
+  template:
+    metadata:
+      labels:
+        app: redis
+    spec:
+      containers:
+      - name: redis
+        image: redis:7.2-alpine
+        ports:
+        - containerPort: 6379
+        resources:
+          requests:
+            cpu: 50m
+            memory: 128Mi
+          limits:
+            cpu: 500m
+            memory: 512Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis
+  namespace: immich
+spec:
+  ports:
+  - port: 6379
+  selector:
+    app: redis
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: immich-ml
+  namespace: immich
+  labels:
+    app: immich-ml
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: immich-ml
+  template:
+    metadata:
+      labels:
+        app: immich-ml
+    spec:
+      containers:
+      - name: immich-ml
+        image: ghcr.io/immich-app/immich-machine-learning:release
+        ports:
+        - containerPort: 3003
+        volumeMounts:
+        - name: cache
+          mountPath: /cache
+        resources:
+          requests:
+            cpu: 500m
+            memory: 1Gi
+          limits:
+            cpu: 2000m
+            memory: 4Gi
+      volumes:
+      - name: cache
+        persistentVolumeClaim:
+          claimName: immich-ml-cache
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: immich-ml
+  namespace: immich
+spec:
+  ports:
+  - port: 3003
+  selector:
+    app: immich-ml
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: immich-server
+  namespace: immich
+  labels:
+    app: immich-server
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: immich-server
+  template:
+    metadata:
+      labels:
+        app: immich-server
+    spec:
+      securityContext:
+        runAsUser: 10001  # immich system user
+        runAsGroup: 10001  # immich system group
+        fsGroup: 10001  # immich group for volume access
+      containers:
+      - name: immich-server
+        image: ghcr.io/immich-app/immich-server:release
+        ports:
+        - name: http
+          containerPort: 3001
+          protocol: TCP
+        env:
+        - name: TZ
+          value: "Asia/Tokyo"
+        envFrom:
+        - configMapRef:
+            name: immich-config
+        - secretRef:
+            name: immich-secrets
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          runAsNonRoot: true
+          capabilities:
+            drop:
+            - ALL
+        volumeMounts:
+        - name: upload
+          mountPath: /usr/src/app/upload
+        - name: tmp
+          mountPath: /tmp
+        resources:
+          requests:
+            cpu: 500m
+            memory: 512Mi
+          limits:
+            cpu: 2000m
+            memory: 2Gi
+        livenessProbe:
+          httpGet:
+            path: /api/server-info/ping
+            port: http
+          initialDelaySeconds: 60
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /api/server-info/ping
+            port: http
+          initialDelaySeconds: 30
+          periodSeconds: 5
+      volumes:
+      - name: upload
+        hostPath:
+          path: /mnt/raid/shared/immich
+          type: Directory
+      - name: tmp
+        emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: immich-server
+  namespace: immich
+  labels:
+    app: immich-server
+spec:
+  type: NodePort
+  ports:
+  - name: http
+    port: 3001
+    targetPort: http
+    nodePort: 30001
+    protocol: TCP
+  selector:
+    app: immich-server
