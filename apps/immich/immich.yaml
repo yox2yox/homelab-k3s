@@ -258,7 +258,6 @@ spec:
             name: immich-secrets
         securityContext:
           allowPrivilegeEscalation: false
-          readOnlyRootFilesystem: true
           runAsNonRoot: true
           capabilities:
             drop:
@@ -268,6 +267,8 @@ spec:
           mountPath: /usr/src/app/upload
         - name: tmp
           mountPath: /tmp
+        - name: cache
+          mountPath: /var/cache
         resources:
           requests:
             cpu: 500m
@@ -293,6 +294,8 @@ spec:
           path: /mnt/raid/shared/immich
           type: Directory
       - name: tmp
+        emptyDir: {}
+      - name: cache
         emptyDir: {}
 ---
 apiVersion: v1
