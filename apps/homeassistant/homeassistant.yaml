@@ -36,6 +36,8 @@ spec:
       labels:
         app: homeassistant
     spec:
+      hostNetwork: true
+      dnsPolicy: ClusterFirstWithHostNet
       containers:
       - name: homeassistant
         image: ghcr.io/home-assistant/home-assistant:stable
@@ -51,6 +53,11 @@ spec:
           mountPath: /config
         - name: tmp
           mountPath: /tmp
+        - name: dbus
+          mountPath: /var/run/dbus
+          readOnly: true
+        securityContext:
+          privileged: true
         resources:
           requests:
             cpu: 500m
@@ -78,6 +85,10 @@ spec:
           claimName: homeassistant-config
       - name: tmp
         emptyDir: {}
+      - name: dbus
+        hostPath:
+          path: /var/run/dbus
+          type: Directory
 ---
 apiVersion: v1
 kind: Service
