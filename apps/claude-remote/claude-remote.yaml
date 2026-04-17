@@ -1,0 +1,91 @@
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: claude-remote
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: claude-config
+  namespace: claude-remote
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: local-path
+  resources:
+    requests:
+      storage: 1Gi
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: claude-workspace
+  namespace: claude-remote
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: local-path
+  resources:
+    requests:
+      storage: 20Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: claude-remote
+  namespace: claude-remote
+  labels:
+    app: claude-remote
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: claude-remote
+  template:
+    metadata:
+      labels:
+        app: claude-remote
+    spec:
+      securityContext:
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+      containers:
+      - name: claude
+        image: ghcr.io/yox2yox/claude-remote:latest
+        imagePullPolicy: Always
+        env:
+        - name: TZ
+          value: "Asia/Tokyo"
+        - name: CLAUDE_REMOTE_CONTROL_SESSION_NAME_PREFIX
+          value: "homelab"
+        stdin: true
+        tty: true
+        volumeMounts:
+        - name: claude-config
+          mountPath: /home/claude/.claude
+        - name: workspace
+          mountPath: /workspace
+        resources:
+          requests:
+            cpu: 250m
+            memory: 512Mi
+          limits:
+            cpu: 2000m
+            memory: 4Gi
+        securityContext:
+          allowPrivilegeEscalation: false
+          runAsNonRoot: true
+          capabilities:
+            drop:
+            - ALL
+      volumes:
+      - name: claude-config
+        persistentVolumeClaim:
+          claimName: claude-config
+      - name: workspace
+        persistentVolumeClaim:
+          claimName: claude-workspace
